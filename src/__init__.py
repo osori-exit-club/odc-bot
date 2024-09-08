@@ -11,6 +11,7 @@ def main():
     load_dotenv()
 
     intents = discord.Intents.default()
+    intents.message_content = True
 
     bot = commands.Bot(command_prefix='!', intents=intents)
 
@@ -22,9 +23,14 @@ def main():
         )
     )
 
+    def isSlashCommand(ctx: commands.Context) -> bool:
+        return ctx.interaction is not None
+
+    def isActionCommand(ctx: commands.Context) -> bool:
+        return ctx.interaction is None
+
     @bot.hybrid_command(name="odc_message", description=f"예약된 메세지를 전송 합니다. {message_description}")
     async def odc_message(ctx: commands.Context, what: str):
-
         command_description = message_description
 
         try:
@@ -40,7 +46,17 @@ def main():
             print("failed to new CSV")
 
         if what == 'help':
-            await ctx.reply(f"{command_description}", ephemeral=True)
+            if isActionCommand(ctx):
+                await ctx.message.delete()
+                await ctx.send(
+                    f"{command_description}",
+                    delete_after=30,
+                )
+            elif isSlashCommand(ctx):
+                await ctx.reply(
+                    f"{command_description}",
+                    ephemeral=True
+                )
             return
 
         try:
@@ -48,13 +64,23 @@ def main():
 
             if len(df_target) > 0:
                 message_content = df_target["message"].values[0]
-                print(f"{what}\n{message_content}")
-                await ctx.send(f"{message_content}", mention_author = False)
+                print(f"> {what}\n{message_content}")
+                if isActionCommand(ctx):
+                    await ctx.message.delete()
+                    await ctx.send(f"> {message_content}")
+                elif isSlashCommand(ctx):
+                    await ctx.reply(
+                        content=f"{df_target["name"].values[0]}",
+                        ephemeral=True
+                    )
+                    await ctx.reply(f"> {message_content}")
             else:
                 raise commands.CheckFailure(f"unsupported what: {what}\n{command_description}")
 
         except Exception as e:
-            await ctx.reply(f"오류가 발생 했습니다: {e}", ephemeral=True)
+            if isSlashCommand(ctx):
+                await ctx.reply(f"오류가 발생 했습니다: {e}", ephemeral=True)
+
 
     @bot.event
     async def on_ready():
