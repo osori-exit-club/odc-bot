@@ -1,10 +1,9 @@
 import os
-from logging import exception
 
+import discord
 import pandas as pd
 from discord.ext import commands
 from dotenv import load_dotenv
-import discord
 
 
 def main():
@@ -70,7 +69,7 @@ def main():
                     await ctx.send(f"> {message_content}")
                 elif isSlashCommand(ctx):
                     await ctx.reply(
-                        content=f"{df_target["name"].values[0]}",
+                        content=df_target["name"].values[0],
                         ephemeral=True
                     )
                     await ctx.reply(f"> {message_content}")
