@@ -80,7 +80,6 @@ def main():
             if isSlashCommand(ctx):
                 await ctx.reply(f"오류가 발생 했습니다: {e}", ephemeral=True)
 
-
     @bot.event
     async def on_ready():
         await bot.tree.sync()
