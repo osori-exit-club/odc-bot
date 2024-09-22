@@ -6,7 +6,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 
-def main():
+def create_bot():
     load_dotenv()
 
     intents = discord.Intents.default()
@@ -84,6 +84,12 @@ def main():
     async def on_ready():
         await bot.tree.sync()
         print(f'Logged in as {bot.user}')
+
+    return bot
+
+
+def main():
+    bot = create_bot()
 
     bot.run(os.getenv("DISCORD_TOKEN"))
 
