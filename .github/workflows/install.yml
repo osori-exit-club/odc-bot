@@ -49,7 +49,7 @@ jobs:
         run: pip install pyinstaller
 
       - name: Build executable
-        run: pyinstaller --onefile -n odc_bot --add-data "src/ControlPanel.py:src" --add-data "src/bot.py:src" --hidden-import 'discord' --hidden-import 'pandas' src/bot-app.py
+        run: pyinstaller --onefile -n odc_bot --add-data "src/ControlPanel.py:src" --add-data "src/bot.py:src"  --add-data ".env:."  --hidden-import 'discord' --hidden-import 'pandas' src/bot-app.py
         shell: bash
 
       - name: Upload artifact
