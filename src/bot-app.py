@@ -53,10 +53,10 @@ async def async_main():
     token = os.getenv("DISCORD_TOKEN")
 
     if csv_url is None:
-        raise "CSV_URL is empty on .env"
+        raise RuntimeError("CSV_URL is empty on .env")
 
-    if csv_url is None:
-        raise "DISCORD_TOKEN is empty on .env"
+    if token is None:
+        raise RuntimeError("DISCORD_TOKEN is empty on .env")
 
     app = QApplication(sys.argv)
     loop = QEventLoop(app)
