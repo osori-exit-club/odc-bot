@@ -5,7 +5,7 @@ a = Analysis(
     ['src/bot-app.py'],
     pathex=[],
     binaries=[],
-    datas=[('src/ControlPanel.py', 'src'), ('src/bot.py', 'src'), ('.env', '.')],
+    datas=[('src/ControlPanel.py', 'src'), ('src/bot.py', 'src'), ('src/.env', 'src')],
     hiddenimports=['discord', 'pandas'],
     hookspath=[],
     hooksconfig={},

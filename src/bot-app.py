@@ -47,8 +47,17 @@ class BotClientApp:
 
 
 async def async_main():
-    load_dotenv()
+    # 실행 파일이 위치한 디렉터리 경로 가져오기
+    if getattr(sys, 'frozen', False):  # PyInstaller로 빌드된 실행 파일인 경우
+        base_dir = os.path.dirname(sys.executable)
+    else:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
 
+    # .env 파일 경로 설정
+    dotenv_path = os.path.join(base_dir, '.env')
+    print('dotenv_path ' + dotenv_path)
+
+    load_dotenv(dotenv_path)
     csv_url = os.getenv("CSV_URL")
     token = os.getenv("DISCORD_TOKEN")
 
