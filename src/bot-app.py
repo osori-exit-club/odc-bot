@@ -52,6 +52,12 @@ async def async_main():
     csv_url = os.getenv("CSV_URL")
     token = os.getenv("DISCORD_TOKEN")
 
+    if csv_url is None:
+        raise "CSV_URL is empty on .env"
+
+    if csv_url is None:
+        raise "DISCORD_TOKEN is empty on .env"
+
     app = QApplication(sys.argv)
     loop = QEventLoop(app)
     asyncio.set_event_loop(loop)
