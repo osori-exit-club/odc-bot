@@ -119,14 +119,7 @@ def main():
     token = os.getenv("DISCORD_TOKEN")
 
     bot = DiscordBot(csv_url=csv_url, token=token)
-
-    bot_thread = threading.Thread(target=bot.run_discord_bot)
-    print(f"[{DiscordBot.TAG}] start")
-    bot_thread.start()
-    print(f"[{DiscordBot.TAG}] sleep")
-    time.sleep(5)
-    bot.stop_discord_bot()
-    print(f"[{DiscordBot.TAG}] complete")
+    bot.run_discord_bot()
 
 
 if __name__ == "__main__":
