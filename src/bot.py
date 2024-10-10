@@ -1,7 +1,5 @@
 import asyncio
 import os
-import threading
-import time
 from typing import Optional, Callable
 
 import discord
