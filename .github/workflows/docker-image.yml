@@ -1,0 +1,56 @@
+name: Deploy to Prod ECS
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECS_CLUSTER: odc-discord-bot
+  ECR_REPOSITORY: odc-discord-bot
+  ECS_TASK_DEFINITION: odc-discord-bot
+  ECS_SERVICE: odc-discord-bot
+  CONTAINER_NAME: odc-discord-bot
+  REGION: ap-northeast-2
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: prod
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: 214069594667.dkr.ecr.ap-northeast-2.amazonaws.com
+        run: |
+          docker build -t odc-discord-bot -t $ECR_REGISTRY/$ECR_REPOSITORY:latest . 
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Deploy to ECS
+        run: aws ecs update-service --force-new-deployment --cluster ${{ env.ECS_CLUSTER }}  --service ${{ env.ECS_SERVICE }} --task-definition ${{ env.ECS_TASK_DEFINITION }}
