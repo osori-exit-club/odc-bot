@@ -35,7 +35,7 @@ class DiscordBot:
             for name, message in self.command_dict.items():
                 if name.isdigit():
                     continue
-                add_dynamic_slash_command(name, name, message)
+                update_dynamic_slash_command(name, name, message)
 
             print(f'[{self.TAG}] tree.sync start')
             try:
@@ -44,12 +44,23 @@ class DiscordBot:
             except Exception as e:
                 print(f"[{self.TAG}] Error syncing commands: {e}")
 
-        def add_dynamic_slash_command(name, description, message):
+        def update_dynamic_slash_command(name, description, message):
+            bot.tree.remove_command(name)
 
-            @bot.tree.command(name=name, description=description)
+            @bot.tree.command(name=name, description=description, )
             async def hybrid_command(interaction: discord.Interaction):
-                print(f'[{self.TAG}] {name} executed {message}')
-                await interaction.response.send_message(f"> {message}")
+                command_dict = self.get_command_dict()
+                message_content = command_dict.get(name)
+                if message_content is not None:
+                    print(f'[{self.TAG}] {name} executed {message_content}')
+                    await interaction.response.send_message(f"> {message_content}")
+                elif message is not None:
+                    await interaction.response.send_message(f"> {message}")
+                else:
+                    await interaction.response.send_message(
+                        f"> failed to fine {name} from csv file",
+                        ephemeral=True
+                    )
 
     def get_command_dict(self) -> dict[str, str]:
         try:
