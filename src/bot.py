@@ -73,7 +73,6 @@ class DiscordBot:
         res = dict()
         for index, row in df.iterrows():
             message_content = row['message']
-            res[str(row["what"])] = message_content
             res[row["name"].replace(" ", "-")] = message_content
         return res
 
