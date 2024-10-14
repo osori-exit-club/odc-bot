@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 class DiscordBot:
     TAG = "DiscordBot"
+    df_prev = None
 
     def __init__(self, csv_url, token, on_ready_bot: Optional[Callable] = None):
         self.loop = None
@@ -64,18 +65,20 @@ class DiscordBot:
                     )
                 return
 
-            try:
-                df_target = df_local[df_local["what"].astype(str) == what]
+            command_dict = self.get_command_dict()
 
-                if len(df_target) > 0:
-                    message_content = df_target["message"].values[0]
+            try:
+                message_content = command_dict[what]
+
+                if message_content is not None:
                     print(f"[${self.TAG}] > {what}\n{message_content}")
+                    await add_dynamic_slash_command(df_local["name"].replace(" ", "-"), message_content)
                     if isActionCommand(ctx):
                         await ctx.message.delete()
                         await ctx.send(f"> {message_content}")
                     elif isSlashCommand(ctx):
                         await ctx.reply(
-                            content=df_target["name"].values[0],
+                            content=message_content,
                             ephemeral=True
                         )
                         await ctx.reply(f"> {message_content}")
@@ -92,6 +95,29 @@ class DiscordBot:
             print(f'[{self.TAG}] Logged in as {bot.user}')
             if on_ready_bot:
                 on_ready_bot()
+
+        async def add_dynamic_slash_command(name, description, message):
+            @bot.hybrid_command(name=name, description=description)
+            async def dynamic_command(ctx):
+                await ctx.send_message(f"{message}")
+
+            await bot.tree.sync()
+            print(f'[{self.TAG}] sync')
+
+    async def get_command_dict(self):
+        try:
+            df = pd.read_csv(os.getenv("CSV_URL"))
+            self.df_prev = df
+        except Exception:
+            df = self.df_prev
+            print(f"[${self.TAG}] failed to new CSV")
+
+        res = dict()
+        for index, row in df.iterrows():
+            message_content = df["message"].values[0]
+            res[row["what"]] = message_content
+            res[row["name"].replace(" ", "-")] = message_content
+        return res
 
     def run_discord_bot(self):
         loop = asyncio.new_event_loop()
