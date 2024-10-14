@@ -18,80 +18,64 @@ class DiscordBot:
 
         bot = commands.Bot(command_prefix='!', intents=intents)
         self.bot = bot
+        self.csv_url = csv_url
         self.token = token
-
-        df = pd.read_csv(csv_url)
-        message_description = "help: show description\n".join(
-            map(
-                lambda x: x if len(x) < 10 else f"{x[:10]}...",
-                (df["what"].astype(str) + ": " + df["message"]).values,
-            )
-        )
-
-        def isSlashCommand(ctx: commands.Context) -> bool:
-            return ctx.interaction is not None
-
-        def isActionCommand(ctx: commands.Context) -> bool:
-            return ctx.interaction is None
-
-        @bot.hybrid_command(name="odc_message", description=f"예약된 메세지를 전송 합니다. {message_description}")
-        async def odc_message(ctx: commands.Context, what: str):
-            command_description = message_description
-
-            try:
-                df_new = pd.read_csv(os.getenv("CSV_URL"))
-                print(f"[${self.TAG}] {df_new}")
-                df_local = df_new
-                command_description = "help: show description\n".join(
-                    (df_new["what"].astype(str) + ": " + df_new["name"]).values,
-                )
-
-            except Exception:
-                df_local = df
-                print(f"[${self.TAG}] failed to new CSV")
-
-            if what == 'help':
-                if isActionCommand(ctx):
-                    await ctx.message.delete()
-                    await ctx.send(
-                        f"{command_description}",
-                        delete_after=30,
-                    )
-                elif isSlashCommand(ctx):
-                    await ctx.reply(
-                        f"{command_description}",
-                        ephemeral=True
-                    )
-                return
-
-            try:
-                df_target = df_local[df_local["what"].astype(str) == what]
-
-                if len(df_target) > 0:
-                    message_content = df_target["message"].values[0]
-                    print(f"[${self.TAG}] > {what}\n{message_content}")
-                    if isActionCommand(ctx):
-                        await ctx.message.delete()
-                        await ctx.send(f"> {message_content}")
-                    elif isSlashCommand(ctx):
-                        await ctx.reply(
-                            content=df_target["name"].values[0],
-                            ephemeral=True
-                        )
-                        await ctx.reply(f"> {message_content}")
-                else:
-                    raise commands.CheckFailure(f"unsupported what: {what}\n{command_description}")
-
-            except Exception as e:
-                if isSlashCommand(ctx):
-                    await ctx.reply(f"오류가 발생 했습니다: {e}", ephemeral=True)
+        self.command_dict = self.get_command_dict()
 
         @bot.event
         async def on_ready():
-            await bot.tree.sync()
+            await sync_dynamic_commands()
+
             print(f'[{self.TAG}] Logged in as {bot.user}')
+
             if on_ready_bot:
                 on_ready_bot()
+
+        async def sync_dynamic_commands():
+            for name, (message, description) in self.command_dict.items():
+                if name.isdigit():
+                    continue
+                update_dynamic_slash_command(name, description, message)
+
+            print(f'[{self.TAG}] tree.sync start')
+            try:
+                synced = await self.bot.tree.sync()
+                print(f"[{self.TAG}] Synced {len(synced)} commands. | ${synced}")
+            except Exception as e:
+                print(f"[{self.TAG}] Error syncing commands: {e}")
+
+        def update_dynamic_slash_command(name, description, message):
+            bot.tree.remove_command(name)
+
+            @bot.tree.command(name=name, description=description, )
+            async def hybrid_command(interaction: discord.Interaction):
+                command_dict = self.get_command_dict()
+                (message_content, _) = command_dict.get(name)
+                if message_content is not None:
+                    print(f'[{self.TAG}] {name} executed {message_content}')
+                    await interaction.response.send_message(f"> {message_content}")
+                elif message is not None:
+                    await interaction.response.send_message(f"> {message}")
+                else:
+                    await interaction.response.send_message(
+                        f"> failed to fine {name} from csv file",
+                        ephemeral=True
+                    )
+
+    def get_command_dict(self) -> dict[str, (str, str)]:
+        try:
+            print(f"[{self.TAG}] read_csv")
+            df = pd.read_csv(self.csv_url)
+        except Exception:
+            print(f"[{self.TAG}] failed to new CSV")
+            return dict()
+
+        res = dict()
+        for index, row in df.iterrows():
+            description = row['description']
+            message_content = row['message']
+            res[row["name"].replace(" ", "-")] = (message_content, description)
+        return res
 
     def run_discord_bot(self):
         loop = asyncio.new_event_loop()
@@ -100,8 +84,9 @@ class DiscordBot:
 
         try:
             loop.run_until_complete(self.bot.start(self.token))  # 봇 실행
-        except asyncio.CancelledError:
+        except asyncio.CancelledError as e:
             print("asyncio.CancelledError")
+            print(e)
             pass
         finally:
             loop.run_until_complete(self.bot.close())  # 봇 종료
