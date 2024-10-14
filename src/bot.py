@@ -32,10 +32,10 @@ class DiscordBot:
                 on_ready_bot()
 
         async def sync_dynamic_commands():
-            for name, message in self.command_dict.items():
+            for name, (message, description) in self.command_dict.items():
                 if name.isdigit():
                     continue
-                update_dynamic_slash_command(name, name, message)
+                update_dynamic_slash_command(name, description, message)
 
             print(f'[{self.TAG}] tree.sync start')
             try:
@@ -50,7 +50,7 @@ class DiscordBot:
             @bot.tree.command(name=name, description=description, )
             async def hybrid_command(interaction: discord.Interaction):
                 command_dict = self.get_command_dict()
-                message_content = command_dict.get(name)
+                (message_content, _) = command_dict.get(name)
                 if message_content is not None:
                     print(f'[{self.TAG}] {name} executed {message_content}')
                     await interaction.response.send_message(f"> {message_content}")
@@ -62,7 +62,7 @@ class DiscordBot:
                         ephemeral=True
                     )
 
-    def get_command_dict(self) -> dict[str, str]:
+    def get_command_dict(self) -> dict[str, (str, str)]:
         try:
             print(f"[{self.TAG}] read_csv")
             df = pd.read_csv(self.csv_url)
@@ -72,8 +72,9 @@ class DiscordBot:
 
         res = dict()
         for index, row in df.iterrows():
+            description = row['description']
             message_content = row['message']
-            res[row["name"].replace(" ", "-")] = message_content
+            res[row["name"].replace(" ", "-")] = (message_content, description)
         return res
 
     def run_discord_bot(self):
