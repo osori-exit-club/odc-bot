@@ -50,12 +50,12 @@ class DiscordBot:
             @bot.tree.command(name=name, description=description, )
             async def hybrid_command(interaction: discord.Interaction):
                 command_dict = self.get_command_dict()
-                (message_content, _) = command_dict.get(name)
+                (message_dict, _) = command_dict.get(name)
+                message_content = message_dict if message_dict is not None else message
+
                 if message_content is not None:
                     print(f'[{self.TAG}] {name} executed {message_content}')
                     await interaction.response.send_message(f"> {message_content}")
-                elif message is not None:
-                    await interaction.response.send_message(f"> {message}")
                 else:
                     await interaction.response.send_message(
                         f"> failed to fine {name} from csv file",
