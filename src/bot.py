@@ -55,7 +55,19 @@ class DiscordBot:
 
                 if message_content is not None:
                     print(f'[{self.TAG}] {name} executed {message_content}')
-                    await interaction.response.send_message(f"> {message_content}")
+                    try:
+                        await interaction.channel.send(f"> {message_content}")
+                        await interaction.response.send_message(
+                            "메세지 전송 성공",
+                            ephemeral=True
+                        )
+
+                    except Exception as e:
+                        print(e)
+                        await interaction.response.send_message(
+                            "메세지 전송 실패",
+                            ephemeral=True
+                        )
                 else:
                     await interaction.response.send_message(
                         f"> failed to fine {name} from csv file",
