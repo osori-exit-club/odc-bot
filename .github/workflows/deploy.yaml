@@ -3,6 +3,8 @@ name: Deploy to ECS
 on:
   push:
     branches: [ "main" ]
+  issues:
+    types: [opened, labeled]
 
 env:
   AWS_REGION: ap-northeast-2
@@ -19,6 +21,7 @@ permissions:
 jobs:
   deploy:
     name: Deploy
+    if: github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'deploy') || github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: prod
     permissions:
