@@ -74,22 +74,66 @@ class DiscordBot:
                         ephemeral=True
                     )
 
-        @bot.tree.command(name="멘토링-시작", description="멘토링을 시작하고, 50분 후·60분 후 알림")
-        async def mentoring_start(interaction: discord.Interaction):
+        @bot.tree.command(
+            name="멘토링-타이머",
+            description="멘토링을 시작하고, 종료 10분 전·종료 알림(기본 60분)"
+        )
+        async def mentoring_start(
+                interaction: discord.Interaction,
+                duration: Optional[int] = 60  # 디폴트 60분
+        ):
+            # 시간·분 단위 계산
+            hours, mins = divmod(duration, 60)
+            if hours > 0 and mins > 0:
+                duration_str = f"{hours}시간 {mins}분"
+            elif hours > 0 and mins == 0:
+                duration_str = f"{hours}시간"
+            else:
+                duration_str = f"{mins}분"
+
             # 1️⃣ 즉시 시작 메시지
-            await interaction.response.send_message("멘토링 시작! 한시간 뒤 종료됩니다.")
+            await interaction.response.send_message(
+                f"멘토링 시작! 총 **{duration_str}** 동안 진행됩니다."
+            )
+            # 이 호출 이후에 원본 메시지를 가져올 수 있습니다
+            start_msg = await interaction.original_response()
 
-            async def schedule_reminders(channel: discord.TextChannel):
-                # 2️⃣ 50분(=3000초) 후 “종료 10분 전”
-                # await asyncio.sleep(50 * 60)
-                await asyncio.sleep(50 * 60)
-                await channel.send("종료 10분 전입니다.")
-                # 3️⃣ 추가로 10분(=600초) 더 기다렸다가 “종료되었습니다”
-                await asyncio.sleep(10 * 60)
-                await channel.send("종료되었습니다.")
+            async def schedule_reminders(channel: discord.TextChannel, total_min: int, ref_msg: discord.Message):
+                if duration > 10:
+                    # (총 시간 – 10분) 후 10분 전 알림
+                    await asyncio.sleep((total_min - 10) * 60)
+                    await channel.send(
+                        "⏰ 종료 10분 전입니다.",
+                        reference=ref_msg,
+                        allowed_mentions=discord.AllowedMentions(replied_user=False)
+                    )
+                    # 추가로 10분(=600초) 대기 후 종료 알림
+                    await asyncio.sleep(10 * 60)
+                    await channel.send(
+                        "🏁 멘토링이 종료되었습니다.",
+                        reference=ref_msg,
+                        allowed_mentions=discord.AllowedMentions(replied_user=False)
+                    )
+                else:
+                    half_time = int(total_min / 2)
+                    # 총 시간 10분 이하일 경우는 절반 시간 사용
+                    await asyncio.sleep(half_time * 60)
+                    await channel.send(
+                        "⏰ 종료 {}분 전입니다.".format(half_time),
+                        reference=ref_msg,
+                        allowed_mentions=discord.AllowedMentions(replied_user=False)
+                    )
+                    # 추가로 남은 대기 후 종료 알림
+                    await asyncio.sleep((total_min - half_time) * 60)
+                    await channel.send(
+                        "🏁 멘토링이 종료되었습니다.",
+                        reference=ref_msg,
+                        allowed_mentions=discord.AllowedMentions(replied_user=False)
+                    )
 
-            # 백그라운드 태스크 등록
-            await bot.loop.create_task(schedule_reminders(interaction.channel))
+
+            # 백그라운드에서 스케줄링
+            bot.loop.create_task(schedule_reminders(interaction.channel, duration, start_msg))
 
     def get_command_dict(self) -> dict[str, (str, str)]:
         try:
