@@ -74,6 +74,23 @@ class DiscordBot:
                         ephemeral=True
                     )
 
+        @bot.tree.command(name="멘토링-시작", description="멘토링을 시작하고, 50분 후·60분 후 알림")
+        async def mentoring_start(interaction: discord.Interaction):
+            # 1️⃣ 즉시 시작 메시지
+            await interaction.response.send_message("멘토링 시작! 한시간 뒤 종료됩니다.")
+
+            async def schedule_reminders(channel: discord.TextChannel):
+                # 2️⃣ 50분(=3000초) 후 “종료 10분 전”
+                # await asyncio.sleep(50 * 60)
+                await asyncio.sleep(50 * 60)
+                await channel.send("종료 10분 전입니다.")
+                # 3️⃣ 추가로 10분(=600초) 더 기다렸다가 “종료되었습니다”
+                await asyncio.sleep(10 * 60)
+                await channel.send("종료되었습니다.")
+
+            # 백그라운드 태스크 등록
+            await bot.loop.create_task(schedule_reminders(interaction.channel))
+
     def get_command_dict(self) -> dict[str, (str, str)]:
         try:
             print(f"[{self.TAG}] read_csv")
