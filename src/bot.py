@@ -11,14 +11,14 @@ from dotenv import load_dotenv
 class DiscordBot:
     TAG = "DiscordBot"
 
-    def __init__(self, csv_url, token, on_ready_bot: Optional[Callable] = None):
+    def __init__(self, csv_path, token, on_ready_bot: Optional[Callable] = None):
         self.loop = None
         intents = discord.Intents.default()
         intents.message_content = True
 
         bot = commands.Bot(command_prefix='!', intents=intents)
         self.bot = bot
-        self.csv_url = csv_url
+        self.csv_path = csv_path
         self.token = token
         self.command_dict = self.get_command_dict()
 
@@ -151,10 +151,13 @@ class DiscordBot:
 
     def get_command_dict(self) -> dict[str, (str, str)]:
         try:
-            print(f"[{self.TAG}] read_csv")
-            df = pd.read_csv(self.csv_url)
-        except Exception:
-            print(f"[{self.TAG}] failed to new CSV")
+            print(f"[{self.TAG}] read_csv from {self.csv_path}")
+            if not os.path.exists(self.csv_path):
+                print(f"[{self.TAG}] CSV file not found: {self.csv_path}")
+                return dict()
+            df = pd.read_csv(self.csv_path)
+        except Exception as e:
+            print(f"[{self.TAG}] failed to read CSV: {e}")
             return dict()
 
         res = dict()
@@ -185,10 +188,22 @@ class DiscordBot:
 
 def main():
     load_dotenv()
-    csv_url = os.getenv("CSV_URL")
+    
+    # CSV 소스 선택 플래그 (기본값: 로컬 파일 사용)
+    use_local_csv = os.getenv("USE_LOCAL_CSV", "true").lower() == "true"
+    
+    if use_local_csv:
+        # 로컬 CSV 파일 사용
+        csv_source = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "commands.csv")
+        print(f"[MAIN] Using local CSV file: {csv_source}")
+    else:
+        # 원격 Google Sheets CSV 사용
+        csv_source = os.getenv("CSV_URL")
+        print(f"[MAIN] Using remote CSV URL: {csv_source}")
+    
     token = os.getenv("DISCORD_TOKEN")
 
-    bot = DiscordBot(csv_url=csv_url, token=token)
+    bot = DiscordBot(csv_path=csv_source, token=token)
     bot.run_discord_bot()
 
 
