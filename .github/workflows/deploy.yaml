@@ -14,6 +14,7 @@ env:
   ECS_SERVICE: odc-discord-bot
   CONTAINER_NAME: odc-discord-bot
   REGION: ap-northeast-2
+  USE_LOCAL_CSV: ${{ vars.USE_LOCAL_CSV }}
 
 permissions:
   contents: read
