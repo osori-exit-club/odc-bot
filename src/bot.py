@@ -187,7 +187,7 @@ def main():
     load_dotenv()
     
     # CSV 소스 선택 플래그 (기본값: 로컬 파일 사용)
-    use_local_csv = os.getenv("USE_LOCAL_CSV", "true").lower() == "true"
+    use_local_csv = os.getenv("USE_LOCAL_CSV", "false").lower() == "true"
     
     if use_local_csv:
         # 로컬 CSV 파일 사용
