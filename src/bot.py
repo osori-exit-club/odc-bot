@@ -152,9 +152,6 @@ class DiscordBot:
     def get_command_dict(self) -> dict[str, (str, str)]:
         try:
             print(f"[{self.TAG}] read_csv from {self.csv_path}")
-            if not os.path.exists(self.csv_path):
-                print(f"[{self.TAG}] CSV file not found: {self.csv_path}")
-                return dict()
             df = pd.read_csv(self.csv_path)
         except Exception as e:
             print(f"[{self.TAG}] failed to read CSV: {e}")
