@@ -1,0 +1,66 @@
+name: OCI Container Deployment
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  OCI_REGION: ap-singapore-2
+  OCI_NAMESPACE: careerlegosalt 
+  APP_NAME: odc-discord-bot
+  IMAGE_PATH: sin.ocir.io/axhn2uhdk8p1/odc-discord-bot:latest
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # 1. OCI CLI 환경 설정
+      - name: Setup OCI CLI
+        uses: oracle-actions/setup-oci-cli@v1.2.1
+        with:
+          user: ${{ secrets.OCI_CLI_USER }}
+          fingerprint: ${{ secrets.OCI_CLI_FINGERPRINT }}
+          tenancy: ${{ secrets.OCI_CLI_TENANCY }}
+          region: ${{ env.OCI_REGION }}
+          api_key: ${{ secrets.OCI_CLI_KEY_CONTENT }}
+
+      # 2. OCI Registry 로그인 (OCIR)
+      - name: Login to OCIR
+        run: |
+          echo "${{ secrets.OCI_AUTH_TOKEN }}" | docker login ${{ env.OCI_REGION }}.ocir.io -u "${{ env.OCI_NAMESPACE }}/your_username" --password-stdin
+
+      # 3. 이미지 빌드 및 푸시
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t ${{ env.IMAGE_PATH }} .
+          docker push ${{ env.IMAGE_PATH }}
+
+      # 4. 컨테이너 배포 (기존 인스턴스 교체)
+      - name: Deploy to OCI Container Instance
+        run: |
+          # 1. 기존에 실행 중인 동일 이름의 인스턴스가 있다면 ID 조회 후 삭제
+          EXISTING_ID=$(oci container-instances container-instance list \
+            --compartment-id ${{ secrets.OCI_COMPARTMENT_ID }} \
+            --display-name ${{ env.APP_NAME }} \
+            --query "data.items[0].id" --raw-output)
+
+          if [ "$EXISTING_ID" != "null" ]; then
+            echo "Deleting existing instance: $EXISTING_ID"
+            oci container-instances container-instance delete --container-instance-id $EXISTING_ID --force
+            # 삭제 완료까지 잠시 대기
+            sleep 30
+          fi
+
+          # 2. 새 컨테이너 인스턴스 생성 (Always Free 사양 적용)
+          oci container-instances container-instance create \
+            --compartment-id ${{ secrets.OCI_COMPARTMENT_ID }} \
+            --availability-domain "Uocm:SIN-AD-1" \
+            --display-name ${{ env.APP_NAME }} \
+            --shape "CI.Standard.A1.Flex" \
+            --shape-config '{"ocpus":1, "memoryInGBs":4}' \
+            --containers '[{
+              "imageName":"'${{ env.IMAGE_PATH
