@@ -1,4 +1,4 @@
-name: OCI Container Deployment
+name: Deploy to Oracle
 
 on:
   push:
