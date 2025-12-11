@@ -63,4 +63,5 @@ jobs:
             --shape "CI.Standard.A1.Flex" \
             --shape-config '{"ocpus":1, "memoryInGBs":4}' \
             --containers '[{
-              "imageName":"'${{ env.IMAGE_PATH
+              "imageName":"'${{ env.IMAGE_PATH }}'"
+            }]'
