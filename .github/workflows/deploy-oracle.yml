@@ -1,8 +1,8 @@
 name: Deploy to Oracle
 
 on:
-#  push:
-#    branches: [ "main" ]
+  push:
+    branches: [ "main", "feat/oracle-container-instances" ]
   workflow_dispatch:
 
 env:
