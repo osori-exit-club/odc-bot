@@ -31,7 +31,7 @@ jobs:
       # 2. OCI Registry 로그인 (OCIR)
       - name: Login to OCIR
         run: |
-          echo "${{ secrets.OCI_AUTH_TOKEN }}" | docker login ${{ env.OCI_REGION }}.ocir.io -u "${{ env.OCI_NAMESPACE }}/your_username" --password-stdin
+          echo "${{ secrets.OCI_AUTH_TOKEN }}" | docker login ${{ env.OCI_REGION }}.ocir.io -u "${{ env.OCI_NAMESPACE }}/careerlego.salt@gmail.com" --password-stdin
 
       # 3. 이미지 빌드 및 푸시
       - name: Build and Push Docker Image
